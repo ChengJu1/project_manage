@@ -1,0 +1,62 @@
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+VENV/
+env/
+ENV/
+.venv/
+.env
+venv.bak/
+
+# Flask 缓存、日志
+*.log
+logs/
+flask_session/
+.cache
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+site.db
+
+# 上传文件（不提交用户上传附件）
+uploads/
+upload_temp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# 环境变量配置
+.env
+config_local.py
