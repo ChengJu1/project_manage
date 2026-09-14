@@ -18,6 +18,9 @@ project_bp = Blueprint('project', __name__)
 @project_bp.route("/")
 @login_required
 def index():
+    if Project.is_deleted == False:
+        if User.role == "管理员":
+            seen_project = 
     return render_template("index.html")
 
 # 新建项目

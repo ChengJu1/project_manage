@@ -1,4 +1,8 @@
+from email.policy import default
+from tokenize import String
+
 from flask_login import UserMixin
+from sqlalchemy import null, Nullable, Integer
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
 # from datetime import datetime
@@ -6,6 +10,15 @@ from database import db
 #
 # from project_manage.routes.project import proj_detail
 
+project_members = db.Table(
+    "project_members",
+    db.Column("user_id",
+              db.Integer,
+              db.ForeignKey("user.id")),
+    db.Column("project_id",
+              db.Integer,
+              db.ForeignKey("project.id")),
+)
 
 # 用户表
 class User(UserMixin, db.Model):
@@ -31,6 +44,8 @@ class Project(db.Model):
     start_date = db.Column(db.Date(), nullable = False, comment="项目开始时间")
     end_date = db.Column(db.Date(), nullable = False, comment="项目结束时间")
     module = db.Column(db.String(64), nullable=False, comment="项目所在部门")
+    is_deleted = db.Column(db.Boolean(), nullable=False, default = False, comment="是否被删除")
+    members = db.relationship("User", secondary=project_members)
 
 # 文件上传记录表
 class UploadFile(db.Model):
