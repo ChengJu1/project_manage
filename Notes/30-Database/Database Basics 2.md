@@ -492,13 +492,61 @@ project_members = db.Table(
 
 
 ## `db.relationship`
+
 语句基本格式如下：
+
 ```python
 属性名 = db.relationship(
 	"关联的模型名", # 其实就是想连接的对象是谁
 	secondary=中间表变量
 )
 ```
+
+### `模型.query.filter(条件).all() `
+
+查询符合条件的数据库里的所有值，返回列表
+
+布尔条件的话有固定格式:
+
+```python
+模型.字段.is_(False) # 写在filter后的括号里
+```
+
+条件还可以是:
+
+```Python
+or_(
+    条件1,
+    条件2
+)
+```
+
+```Python
+模型.关系字段.any(关联模型的条件) #是否有满足条件的 返回值是True False
+```
+### `query`
+
+```Python
+Project.query.filter(...)  # 添加筛选条件,这一步只是创建对象，还没提取出来
+Project.query.first()      # 取第一条
+Project.query.all()        # 取出全部，返回列表
+```
+
+### 上传绑定中间表
+
+```Python
+project = Project.query.get(1)
+user = User.query.get(2)
+
+project.members.append(user)
+```
+
+这样用户2和项目1就可以绑定了
+
+### `Project.name.ilike(f"%{keyword}%")`
+
+`ilike`代表大小写不敏感模糊搜索
+
 ## 相关知识
 
 - [[Database Knowledge Map]]

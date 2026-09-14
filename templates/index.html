@@ -1,2 +1,247 @@
-{% include "_change_password_dialog.html" %}
+{% extends "base.html" %}
+
+{% block title %}项目列表 - 个人项目管理{% endblock %}
+
+{% block content %}
+{% set project_rows = pagination.items if pagination is defined else projects %}
+<main class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">MY PROJECTS</p>
+            <h1>个人项目管理</h1>
+            <p class="header-copy">集中查看项目计划、负责人和当前进度。</p>
+        </div>
+        <div class="user-panel">
+            <div class="user-meta">
+                <span class="user-avatar">{{ current_user.name[:1] }}</span>
+                <span>
+                    <strong>{{ current_user.name }}</strong>
+                    <small>{{ current_user.role }} · {{ current_user.module }}</small>
+                </span>
+            </div>
+            <div class="header-actions">
+                {% include "_change_password_dialog.html" %}
+                <a class="btn btn-outline-secondary" href="{{ url_for('auth.logout') }}">退出登录</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="stat-grid" aria-label="项目统计">
+        <article class="stat-card stat-total">
+            <span>项目总量</span>
+            <strong id="totalCount">{{ total_count if total_count is defined else project_rows|length }}</strong>
+            <small>当前权限范围内的有效项目</small>
+        </article>
+        <article class="stat-card stat-active">
+            <span>进行中项目</span>
+            <strong id="activeCount">{{ active_count if active_count is defined else 0 }}</strong>
+            <small>项目结束日期晚于今天</small>
+        </article>
+        <article class="stat-card stat-complete">
+            <span>已完成项目</span>
+            <strong id="completedCount">{{ completed_count if completed_count is defined else 0 }}</strong>
+            <small>项目结束日期早于今天</small>
+        </article>
+    </section>
+
+    <section class="content-card">
+        <div class="toolbar">
+            <form class="search-form" method="get" action="{{ url_for('project.index') }}">
+                <label class="visually-hidden" for="search">搜索项目</label>
+                <div class="search-box">
+                    <span aria-hidden="true">⌕</span>
+                    <input id="search" name="search" type="search"
+                           value="{{ request.args.get('search', '') }}"
+                           placeholder="搜索项目编号、名称或负责人">
+                </div>
+                <select name="page_size" aria-label="每页数量">
+                    {% set selected_size = request.args.get('page_size', '10') %}
+                    {% for size in (10, 20, 50) %}
+                        <option value="{{ size }}" {% if selected_size|int == size %}selected{% endif %}>
+                            每页 {{ size }} 条
+                        </option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary" type="submit">搜索</button>
+                {% if request.args.get('search') %}
+                    <a class="btn btn-light" href="{{ url_for('project.index') }}">清除</a>
+                {% endif %}
+            </form>
+
+            <div class="toolbar-actions">
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                    ＋ 新建项目
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table project-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>项目编号</th>
+                        <th>项目名称</th>
+                        <th>负责人</th>
+                        <th>所属模块</th>
+                        <th>项目开始日期</th>
+                        <th>项目结束日期</th>
+                        <th>项目进度</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in project_rows %}
+                        <tr class="project-row" data-start="{{ project.start_date }}" data-end="{{ project.end_date }}">
+                            <td><span class="muted-id">#{{ project.id }}</span></td>
+                            <td><span class="project-code">{{ project.pid }}</span></td>
+                            <td>
+                                <strong class="project-name">{{ project.name }}</strong>
+                            </td>
+                            <td>{{ project.proj_manager }}</td>
+                            <td><span class="module-badge">{{ project.module }}</span></td>
+                            <td>{{ project.start_date }}</td>
+                            <td>{{ project.end_date }}</td>
+                            <td class="progress-cell">
+                                <div class="progress" role="progressbar" aria-label="项目进度">
+                                    <div class="progress-bar" style="width: 0%"></div>
+                                </div>
+                                <span class="progress-value">0%</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-light detail-btn"
+                                   href="{{ url_for('project.proj_detail', pid=project.id) }}">查看详情</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="9">
+                                <div class="empty-state">
+                                    <span>◇</span>
+                                    <strong>暂无项目</strong>
+                                    <p>当前筛选条件下没有项目，请尝试清除搜索或新建项目。</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination is defined and pagination.pages > 1 %}
+            <nav class="pagination-wrap" aria-label="项目分页">
+                <span>共 {{ pagination.total }} 条</span>
+                <ul class="pagination mb-0">
+                    {% for page_number in pagination.iter_pages() %}
+                        {% if page_number %}
+                            <li class="page-item {% if page_number == pagination.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('project.index', page=page_number, **request.args) }}">{{ page_number }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+    </section>
+</main>
+
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('project.add_proj') }}">
+                <div class="modal-header">
+                    <div>
+                        <p class="eyebrow mb-1">NEW PROJECT</p>
+                        <h2 class="modal-title fs-4" id="addProjectModalLabel">新建项目</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="pid">项目编号 *</label>
+                            <input class="form-control" id="pid" name="pid" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="name">项目名称 *</label>
+                            <input class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="proj_manager">项目负责人 *</label>
+                            <input class="form-control" id="proj_manager" name="proj_manager" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="module">所属模块 *</label>
+                            <select class="form-select" id="module" name="module" required>
+                                <option value="" selected disabled>请选择所属模块</option>
+                                <option value="网络组">网络组</option>
+                                <option value="软件组">软件组</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="start_date">项目开始日期 *</label>
+                            <input class="form-control" id="start_date" name="start_date" type="date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="end_date">项目结束日期 *</label>
+                            <input class="form-control" id="end_date" name="end_date" type="date" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">创建项目</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (() => {
+        const rows = [...document.querySelectorAll('.project-row')];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let activeCount = 0;
+        let completedCount = 0;
+
+        rows.forEach((row) => {
+            const start = new Date(`${row.dataset.start}T00:00:00`);
+            const end = new Date(`${row.dataset.end}T00:00:00`);
+            let percent = 0;
+
+            if (today >= end) {
+                percent = 100;
+                completedCount += 1;
+            } else if (today > start) {
+                const elapsed = today - start;
+                const duration = end - start;
+                percent = duration > 0 ? Math.round((elapsed / duration) * 100) : 100;
+                activeCount += 1;
+            } else {
+                activeCount += 1;
+            }
+
+            percent = Math.max(0, Math.min(100, percent));
+            const bar = row.querySelector('.progress-bar');
+            const value = row.querySelector('.progress-value');
+            bar.style.width = `${percent}%`;
+            value.textContent = `${percent}%`;
+            bar.classList.toggle('bg-success', percent === 100);
+        });
+
+        {% if active_count is not defined %}
+            document.querySelector('#activeCount').textContent = activeCount;
+        {% endif %}
+        {% if completed_count is not defined %}
+            document.querySelector('#completedCount').textContent = completedCount;
+        {% endif %}
+    })();
+</script>
+{% endblock %}
 <input type="button" value="退出登录" onclick="window.location.href='{{ url_for('auth.logout') }}'">

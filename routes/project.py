@@ -1,5 +1,7 @@
 # routes/project.py
 from datetime import datetime, date
+from multiprocessing.spawn import set_executable
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import distinct, or_
@@ -18,10 +20,32 @@ project_bp = Blueprint('project', __name__)
 @project_bp.route("/")
 @login_required
 def index():
-    if Project.is_deleted == False:
-        if User.role == "管理员":
-            seen_project = 
-    return render_template("index.html")
+    query = Project.query.filter(Project.is_deleted.is_(False))
+    if current_user.role == "主管":
+        query = query.filter(
+            Project.module==current_user.module
+        )
+    elif current_user.role == "教师":
+        query = query.filter(
+        or_
+            (Project.proj_manager == current_user.name,
+            Project.members.any(User.id == current_user.id))
+        )
+
+    keyword = request.args.get("search", "").strip()
+    if keyword:
+        pattern = f"%{keyword}%"
+        query = query.filter(
+            or_(
+                Project.name.ilike(pattern),
+                Project.pid.ilike(pattern),
+                Project.proj_manager.ilike(pattern)
+            )
+        )
+
+    seen_projects = query.all()
+
+    return render_template("index.html", projects=seen_projects)
 
 # 新建项目
 @project_bp.route("/proj/add", methods=["POST"])
