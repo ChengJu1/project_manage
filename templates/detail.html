@@ -1,2 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - 项目详情{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+{% endblock %}
+
+{% block content %}
 {% set return_pid = project.id %}
-{% include "_change_password_dialog.html" %}
+<main class="detail-shell">
+    <header class="detail-topbar">
+        <a class="back-link" href="{{ url_for('project.index') }}">← 返回项目列表</a>
+        <div class="detail-actions">
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+                编辑项目
+            </button>
+            {% if current_user.role == "主管" or current_user.name == project.proj_manager %}
+                <button class="btn btn-outline-danger" type="button"
+                        data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                    删除项目
+                </button>
+            {% endif %}
+            {% include "_change_password_dialog.html" %}
+            <a class="btn btn-outline-secondary" href="{{ url_for('auth.logout') }}">退出登录</a>
+        </div>
+    </header>
+
+    <section class="project-hero"
+             data-start="{{ project.start_date }}"
+             data-end="{{ project.end_date }}">
+        <div class="hero-copy">
+            <div class="hero-meta">
+                <span class="project-code">{{ project.pid }}</span>
+                <span class="module-pill">{{ project.module }}</span>
+                <span class="status-pill" id="projectStatus">计算中</span>
+            </div>
+            <h1>{{ project.name }}</h1>
+            <p>负责人：{{ project.proj_manager }}</p>
+        </div>
+
+        <div class="progress-summary" aria-label="项目时间进度">
+            <div class="progress-heading">
+                <span>项目进度</span>
+                <strong id="projectProgressValue">0%</strong>
+            </div>
+            <div class="project-progress-track">
+                <div class="project-progress-bar" id="projectProgressBar"></div>
+            </div>
+            <small>{{ project.start_date }} 至 {{ project.end_date }}</small>
+        </div>
+    </section>
+
+    <section class="detail-grid" aria-label="项目基本信息">
+        <article class="detail-card information-card">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">PROJECT PROFILE</p>
+                    <h2>基本信息</h2>
+                </div>
+                <span class="record-id">记录 #{{ project.id }}</span>
+            </div>
+
+            <dl class="information-grid">
+                <div>
+                    <dt>项目编号</dt>
+                    <dd>{{ project.pid }}</dd>
+                </div>
+                <div>
+                    <dt>所属模块</dt>
+                    <dd>{{ project.module }}</dd>
+                </div>
+                <div>
+                    <dt>项目负责人</dt>
+                    <dd>{{ project.proj_manager }}</dd>
+                </div>
+                <div>
+                    <dt>当前状态</dt>
+                    <dd id="projectStatusText">计算中</dd>
+                </div>
+                <div>
+                    <dt>开始日期</dt>
+                    <dd>{{ project.start_date }}</dd>
+                </div>
+                <div>
+                    <dt>结束日期</dt>
+                    <dd>{{ project.end_date }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <aside class="detail-card member-card">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">TEAM</p>
+                    <h2>项目成员</h2>
+                </div>
+                <span class="member-count">{{ project.members|length }} 人</span>
+            </div>
+
+            <div class="member-list">
+                {% for member in project.members %}
+                    <div class="member-item">
+                        <span class="member-avatar">{{ member.name[:1] }}</span>
+                        <span>
+                            <strong>{{ member.name }}</strong>
+                            <small>{{ member.role }} · {{ member.module }}</small>
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="member-empty">
+                        <span>◇</span>
+                        <p>暂未添加项目成员</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </aside>
+    </section>
+
+    <section class="detail-card material-card">
+        <div class="section-heading">
+            <div>
+                <p class="section-eyebrow">MATERIALS</p>
+                <h2>项目材料</h2>
+            </div>
+            <span class="coming-soon">下一阶段实现</span>
+        </div>
+        <div class="material-placeholder">
+            <span>▱</span>
+            <strong>材料归档功能尚未启用</strong>
+            <p>完成项目编辑和软删除后，我们将在这里加入上传、下载、预览和打包归档。</p>
+        </div>
+    </section>
+</main>
+
+<div class="modal fade" id="editProjectModal" tabindex="-1"
+     aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('project.edit_proj', pid=project.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <p class="section-eyebrow mb-1">EDIT PROJECT</p>
+                        <h2 class="modal-title fs-4" id="editProjectModalLabel">编辑项目</h2>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="edit-form-note">只填写需要修改的内容，留空的字段会保留当前值。</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="edit_pid">项目编号</label>
+                            <input class="form-control" id="edit_pid" name="pid"
+                                   placeholder="当前：{{ project.pid }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="edit_name">项目名称</label>
+                            <input class="form-control" id="edit_name" name="name"
+                                   placeholder="当前：{{ project.name }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="edit_proj_manager">项目负责人</label>
+                            <input class="form-control" id="edit_proj_manager" name="proj_manager"
+                                   placeholder="当前：{{ project.proj_manager }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">所属模块</label>
+                            <div class="module-readonly">
+                                <span>{{ project.module }}</span>
+                                <small>所属模块不可在项目中修改</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="edit_start_date">项目开始日期</label>
+                            <input class="form-control" id="edit_start_date" name="start_date" type="date">
+                            <small class="current-value-hint">当前：{{ project.start_date }}</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="edit_end_date">项目结束日期</label>
+                            <input class="form-control" id="edit_end_date" name="end_date" type="date">
+                            <small class="current-value-hint">当前：{{ project.end_date }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary" type="submit">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == "主管" or current_user.name == project.proj_manager %}
+<div class="modal fade" id="deleteProjectModal" tabindex="-1"
+     aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content delete-modal-content">
+            <form method="post" action="{{ url_for('project.del_project', pid=project.id) }}">
+                <div class="modal-header">
+                    <div>
+                        <p class="section-eyebrow danger-eyebrow mb-1">DELETE PROJECT</p>
+                        <h2 class="modal-title fs-4" id="deleteProjectModalLabel">确认删除项目</h2>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="delete-warning-icon" aria-hidden="true">!</div>
+                    <p class="delete-warning-title">确定删除“{{ project.name }}”吗？</p>
+                    <p class="delete-warning-copy">
+                        删除后项目将从列表中隐藏。系统采用软删除，不会立即物理清除数据库记录。
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-danger" type="submit">确认删除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+{% endblock %}

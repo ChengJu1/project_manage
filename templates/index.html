@@ -20,6 +20,9 @@
                 </span>
             </div>
             <div class="header-actions">
+                {% if current_user.username == "admin" %}
+                    <a class="btn btn-outline-primary" href="{{ url_for('auth.generate_code') }}">生成邀请码</a>
+                {% endif %}
                 {% include "_change_password_dialog.html" %}
                 <a class="btn btn-outline-secondary" href="{{ url_for('auth.logout') }}">退出登录</a>
             </div>
@@ -104,7 +107,7 @@
                             <td>{{ project.end_date }}</td>
                             <td class="progress-cell">
                                 <div class="progress" role="progressbar" aria-label="项目进度">
-                                    <div class="progress-bar" style="width: 0%"></div>
+                                    <div class="progress-bar progress-bar-empty"></div>
                                 </div>
                                 <span class="progress-value">0%</span>
                             </td>
@@ -174,12 +177,11 @@
                             <input class="form-control" id="proj_manager" name="proj_manager" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="module">所属模块 *</label>
-                            <select class="form-select" id="module" name="module" required>
-                                <option value="" selected disabled>请选择所属模块</option>
-                                <option value="网络组">网络组</option>
-                                <option value="软件组">软件组</option>
-                            </select>
+                            <label class="form-label">所属模块</label>
+                            <div class="module-readonly">
+                                <span>{{ current_user.module }}</span>
+                                <small>项目将自动归入当前账号所属模块</small>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="start_date">项目开始日期 *</label>

@@ -55,3 +55,9 @@ class UploadFile(db.Model):
     uploaded_by = db.Column(db.String(64), nullable=False)
     proj_id = db.Column(db.Integer(), db.ForeignKey("project.id"), nullable=False)
     is_deleted = db.Column(db.Boolean(), default=False, nullable=False)
+
+class RegisterCode(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    code = db.Column(db.String(64), unique=True, nullable=False)
+    is_used = db.Column(db.Boolean(), default=False, nullable=False)
+    assigned_username = db.Column(db.String(64), unique=True, nullable=False)

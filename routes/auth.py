@@ -1,7 +1,14 @@
+from crypt import methods
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
-from models import User
+from sqlalchemy.testing.provision import run_reap_dbs
+from uuid import uuid4
+from flask import abort
+
+from models import User, RegisterCode
 from database import db
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint('auth', __name__)
@@ -30,11 +37,80 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        user = User(username=username, password=generate_password_hash(password))
-        db.session.add(user)
-        db.session.commit()
-        return "注册成功,<a href='/login'>返回登陆</a>"
+        module = request.form["module"]
+        name = request.form["name"]
+        code = request.form.get("company_code")
+        if request.args.get("role") == "主管":
+            register_code = RegisterCode.query.filter(
+                RegisterCode.code == code
+            ).first()
+            if not register_code:
+                flash("注册失败：输入的邀请码不存在，请重新输入")
+                return redirect(url_for("auth.register", role="主管"))
+            elif register_code.assigned_username != username:
+                flash("注册失败：非当前邀请码指定用户")
+                return redirect(url_for("auth.register", role="主管"))
+            elif register_code.is_used:
+                flash("注册失败，此验证码已被使用")
+                return redirect(url_for("auth.register", role="主管"))
+            user = User(
+                name = name,
+                username = username,
+                password = generate_password_hash(password),
+                module = module,
+                role = "主管"
+            )
+            try:
+                register_code.is_used = True
+                db.session.add(user)
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                flash("注册失败，用户名重复")
+                return redirect(url_for("auth.register", role="主管"))
+            flash("注册成功")
+            return redirect(url_for("auth.login"))
+
+        try:
+            if request.args.get("role") == "普通用户":
+                user = User(
+                    name=name,
+                    username=username,
+                    password=generate_password_hash(password),
+                    module=module,
+                    role="普通用户"
+                )
+                db.session.add(user)
+                db.session.commit()
+        except IntegrityError:
+            flash("用户名重复，请修改")
+            db.session.rollback()
+            return redirect(url_for("auth.register", role="普通用户"))
+        flash("注册成功，请返回登录")
+        return redirect(url_for("auth.login"))
     return render_template("register.html")
+
+@auth_bp.route("/generate_code", methods=["GET", "POST"])
+@login_required
+def generate_code():
+    if current_user.username != "admin":
+        abort(403)
+    if request.method == "POST":
+        code = str(uuid4())
+        assigned_username = request.form.get("assigned_username")
+        new_code = RegisterCode(
+            code=code,
+            assigned_username=assigned_username
+        )
+        try:
+            db.session.add(new_code)
+            db.session.commit()
+        except IntegrityError:
+            flash(f"{assigned_username}已被分配过一次激活码")
+            db.session.rollback()
+            return redirect(url_for("auth.generate_code"))
+        flash(f"已生成邀请码，请在当前页面复制，仅显示一次，邀请码为： \n{code}")
+    return render_template("generate_code.html")
 
 
 # 登出
@@ -78,3 +154,4 @@ def change_pwd(user_id):
     flash("密码修改成功请重新登录")
     logout_user()
     return redirect(url_for("auth.login"))
+

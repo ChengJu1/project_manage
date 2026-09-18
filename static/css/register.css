@@ -1,0 +1,156 @@
+* { box-sizing: border-box; }
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    padding: 28px 18px;
+    color: #172033;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+        radial-gradient(circle at 10% 5%, rgba(37, 99, 235, 0.12), transparent 28rem),
+        linear-gradient(145deg, #f8fafc, #eef2ff);
+}
+
+.register-card {
+    width: min(100%, 500px);
+    padding: 34px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 22px 60px rgba(30, 64, 175, 0.12);
+}
+
+.eyebrow {
+    margin: 0 0 7px;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+}
+
+h1 {
+    margin: 0;
+    font-size: 28px;
+    letter-spacing: -0.03em;
+}
+
+.subtitle {
+    margin: 9px 0 24px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.role-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.role-option {
+    padding: 13px 10px;
+    border: 1px solid #d8deea;
+    border-radius: 10px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    background: #f8fafc;
+}
+
+.role-option.active {
+    border-color: #2563eb;
+    color: #1d4ed8;
+    background: #eff6ff;
+    box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.form-group { margin-bottom: 17px; }
+
+label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+input,
+select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    outline: none;
+    color: #172033;
+    font: inherit;
+    background: #fff;
+}
+
+input:focus,
+select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.field-hint {
+    display: block;
+    margin-top: 6px;
+    color: #7c8799;
+    font-size: 12px;
+}
+
+.verification-box {
+    padding: 16px;
+    border: 1px solid #fde2a7;
+    border-radius: 11px;
+    background: #fff9eb;
+}
+
+.verification-box label { color: #8a5300; }
+
+.submit-btn {
+    width: 100%;
+    height: 46px;
+    margin-top: 7px;
+    border: 0;
+    border-radius: 9px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #3157d5;
+}
+
+.submit-btn:hover { background: #2647b6; }
+
+.login-return {
+    margin: 22px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    text-align: center;
+}
+
+.login-return a {
+    color: #2563eb;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.flash-message {
+    margin-bottom: 18px;
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #b91c1c;
+    font-size: 14px;
+    background: #fef2f2;
+}
+
+@media (max-width: 480px) {
+    .register-card { padding: 26px 20px; }
+    .role-options { grid-template-columns: 1fr; }
+}

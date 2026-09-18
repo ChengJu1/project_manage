@@ -208,6 +208,7 @@ body {
 .progress-cell { min-width: 145px; gap: 9px; }
 .progress-cell .progress { width: 82px; height: 7px; background: #e9edf5; }
 .progress-cell .progress-bar { border-radius: 99px; background: var(--primary); }
+.progress-bar-empty { width: 0; }
 .progress-value { min-width: 34px; color: #657086; font-size: 12px; font-weight: 700; }
 .detail-btn { color: var(--primary); background: var(--primary-soft); }
 .empty-state { padding: 64px 20px; color: #8a93a4; text-align: center; }
@@ -236,6 +237,19 @@ body {
 .modal-body { padding: 24px; }
 .form-label { color: #455065; font-size: 13px; font-weight: 700; }
 .form-control, .form-select { min-height: 42px; border-color: #d8dce5; border-radius: 9px; }
+.module-readonly {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid #d8dce5;
+    border-radius: 9px;
+    background: #f6f7fa;
+}
+.module-readonly span { color: #303b50; font-weight: 700; }
+.module-readonly small { color: #8790a1; font-size: 11px; text-align: right; }
 
 @media (max-width: 1050px) {
     .page-header, .toolbar { align-items: stretch; flex-direction: column; }

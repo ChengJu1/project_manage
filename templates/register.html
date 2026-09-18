@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% set requested_role = request.args.get('role', '普通用户') %}
+    {% set selected_role = '主管' if requested_role == '主管' else '普通用户' %}
+    <title>{{ selected_role }}注册 - 个人项目管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+</head>
+<body>
+    <main class="register-card">
+        <p class="eyebrow">CREATE ACCOUNT</p>
+        <h1>{{ selected_role }}注册</h1>
+        <p class="subtitle">
+            {% if selected_role == '主管' %}
+                使用公司发放的验证码创建主管账号。
+            {% else %}
+                创建普通用户账号并选择所属模块。
+            {% endif %}
+        </p>
+
+        <nav class="role-options" aria-label="选择注册类型">
+            <a class="role-option {% if selected_role == '主管' %}active{% endif %}"
+               href="{{ url_for('auth.register', role='主管') }}">主管注册</a>
+            <a class="role-option {% if selected_role == '普通用户' %}active{% endif %}"
+               href="{{ url_for('auth.register', role='普通用户') }}">普通用户注册</a>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="flash-message" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('auth.register', role=selected_role) }}">
+            <input type="hidden" name="role" value="{{ selected_role }}">
+
+            <div class="form-group">
+                <label for="name">真实姓名</label>
+                <input id="name" name="name" type="text" autocomplete="name" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input id="username" name="username" type="text" autocomplete="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input id="password" name="password" type="password" autocomplete="new-password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="module">所属模块</label>
+                <select id="module" name="module" required>
+                    <option value="" selected disabled>请选择所属模块</option>
+                    <option value="网络组">网络组</option>
+                    <option value="软件组">软件组</option>
+                </select>
+            </div>
+
+            {% if selected_role == '主管' %}
+                <div class="form-group verification-box">
+                    <label for="company_code">公司验证码</label>
+                    <input id="company_code" name="company_code" type="text"
+                           autocomplete="one-time-code" placeholder="请输入公司发放的验证码" required>
+                    <small class="field-hint">验证码由公司统一发放，用于确认主管身份。</small>
+                </div>
+            {% endif %}
+
+            <button class="submit-btn" type="submit">注册{{ selected_role }}账号</button>
+        </form>
+
+        <p class="login-return">已有账号？<a href="{{ url_for('auth.login') }}">返回登录</a></p>
+    </main>
+</body>
+</html>

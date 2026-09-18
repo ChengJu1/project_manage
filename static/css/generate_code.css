@@ -1,0 +1,17 @@
+.code-card {
+    width: min(100%, 540px);
+}
+
+.code-result {
+    border-color: #bfdbfe;
+    color: #1e40af;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: all;
+    background: #eff6ff;
+}
+
+.code-card .field-hint {
+    line-height: 1.6;
+}

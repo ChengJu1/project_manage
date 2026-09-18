@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生成主管邀请码 - 个人项目管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/generate_code.css') }}">
+</head>
+<body>
+    <main class="register-card code-card">
+        <p class="eyebrow">ADMIN ONLY</p>
+        <h1>生成主管邀请码</h1>
+        <p class="subtitle">输入指定主管的登录用户名，系统将为该用户生成一个一次性邀请码。</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="flash-message code-result" role="status">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('auth.generate_code') }}">
+            <div class="form-group">
+                <label for="assigned_username">指定用户名</label>
+                <input id="assigned_username" name="assigned_username" type="text"
+                       autocomplete="off" placeholder="请输入主管注册时使用的用户名"
+                       required autofocus>
+                <small class="field-hint">邀请码只能由这个用户名使用，生成后请及时复制并发送给本人。</small>
+            </div>
+
+            <button class="submit-btn" type="submit">生成一次性邀请码</button>
+        </form>
+
+        <p class="login-return"><a href="{{ url_for('project.index') }}">返回项目首页</a></p>
+    </main>
+</body>
+</html>
