@@ -12,10 +12,10 @@
     <header class="detail-topbar">
         <a class="back-link" href="{{ url_for('project.index') }}">← 返回项目列表</a>
         <div class="detail-actions">
-            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal">
-                编辑项目
-            </button>
             {% if current_user.role == "主管" or current_user.name == project.proj_manager %}
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+                    编辑项目
+                </button>
                 <button class="btn btn-outline-danger" type="button"
                         data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
                     删除项目
@@ -123,16 +123,116 @@
                 <p class="section-eyebrow">MATERIALS</p>
                 <h2>项目材料</h2>
             </div>
-            <span class="coming-soon">下一阶段实现</span>
+            {% if files is defined %}
+                <span class="material-count">{{ files|length }} 个文件</span>
+            {% endif %}
         </div>
-        <div class="material-placeholder">
-            <span>▱</span>
-            <strong>材料归档功能尚未启用</strong>
-            <p>完成项目编辑和软删除后，我们将在这里加入上传、下载、预览和打包归档。</p>
-        </div>
+
+        <nav class="material-jump-links" aria-label="跳转到材料分类">
+            {% for mat_key, material in materials.items() %}
+                <a href="#material-{{ mat_key }}">{{ material['name'] }}</a>
+            {% endfor %}
+            {% if current_user.name == project.proj_manager or current_user in project.members %}
+                <a href="#material-recycle">回收区{% if deleted_files %}（{{ deleted_files|length }}）{% endif %}</a>
+            {% endif %}
+        </nav>
+
+        {% if files %}
+            <div class="material-list-heading">
+                <h3>已上传文件</h3>
+                <a class="btn btn-sm btn-outline-primary"
+                   href="{{ url_for('file.download_proj_zip', pid=project.id) }}">打包下载 ZIP</a>
+            </div>
+        {% endif %}
+
+        {% for mat_key, material in materials.items() %}
+            {% set category_files = files|selectattr('mat_key', 'equalto', mat_key)|list %}
+            <div class="material-category" id="material-{{ mat_key }}">
+                <div class="material-category-heading">
+                    <h3>{{ material['name'] }}</h3>
+                    <span>{{ category_files|length }} 个文件</span>
+                </div>
+
+                <form class="material-upload-form" method="post" enctype="multipart/form-data"
+                      action="{{ url_for('file.upload_file', pid=project.id, mat_key=mat_key) }}">
+                    <div class="material-upload-copy">
+                        <label for="materialFiles-{{ mat_key }}">上传{{ material['name'] }}</label>
+                        <p>支持 {{ material['ext']|sort|join('、')|upper }}；可一次选择多个文件。</p>
+                    </div>
+                    <div class="material-upload-controls">
+                        <input class="form-control" id="materialFiles-{{ mat_key }}" name="file" type="file"
+                               accept="{% for ext in material['ext']|sort %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}"
+                               multiple required>
+                        <button class="btn btn-primary" type="submit">上传{{ material['name'] }}</button>
+                    </div>
+                </form>
+
+                {% for file in category_files %}
+                    <div class="material-file-row">
+                        <div class="material-file-info">
+                            <span class="material-file-label">展示名称</span>
+                            <strong class="material-display-name">{{ project.name }} · {{ file.uploaded_time.strftime('%Y-%m-%d %H:%M') }} · {{ file.file_name }}</strong>
+                            <span class="material-file-label">原始文件名</span>
+                            <strong title="{{ file.file_name }}">{{ file.file_name }}</strong>
+                            <span class="material-file-label">标准文件名</span>
+                            <code title="{{ file.standard_name }}">{{ file.standard_name }}</code>
+                            <small>上传人：{{ file.uploaded_by }}</small>
+                        </div>
+                        <div class="material-file-actions">
+                            {% if file.standard_name.rsplit('.', 1)[-1]|lower in ['pdf', 'png', 'jpg', 'jpeg'] %}
+                                <a class="btn btn-sm btn-outline-primary"
+                                   href="{{ url_for('file.preview_file', fid=file.fid) }}"
+                                   target="_blank" rel="noopener">预览</a>
+                            {% endif %}
+                            <a class="btn btn-sm btn-outline-primary"
+                               href="{{ url_for('file.download', fid=file.fid) }}">下载</a>
+                            {% if current_user.name == project.proj_manager or current_user in project.members %}
+                                <form method="post"
+                                      action="{{ url_for('file.del_file', fid=file.fid, pid=project.id) }}"
+                                      onsubmit="return confirm('确定删除这条文件记录吗？服务器上的文件会保留。')">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit"
+                                            aria-label="删除 {{ file.file_name }}">删除</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="material-empty">暂无{{ material['name'] }}，选择文件后点击上传。</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
     </section>
+
+    {% if current_user.name == project.proj_manager or current_user in project.members %}
+        <section class="detail-card recycle-card" id="material-recycle">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">RECYCLE BIN</p>
+                    <h2>文件回收区</h2>
+                </div>
+                <span class="material-count">{{ deleted_files|length }} 个文件</span>
+            </div>
+            <p class="recycle-note">这里的记录仍保留在数据库中。恢复前，服务器上对应的文件必须存在。</p>
+
+            {% for file in deleted_files %}
+                <div class="material-file-row">
+                    <div class="material-file-info">
+                        <strong>{{ file.file_name }}</strong>
+                        <small>{{ materials[file.mat_key]['name'] if file.mat_key in materials else '未分类' }} · 上传于 {{ file.uploaded_time.strftime('%Y-%m-%d %H:%M') }} · {{ file.uploaded_by }}</small>
+                    </div>
+                    <form method="post"
+                          action="{{ url_for('file.del_recovery', pid=project.id, fid=file.fid) }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">恢复</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="material-empty">暂无已删除文件。</div>
+            {% endfor %}
+        </section>
+    {% endif %}
 </main>
 
+{% if current_user.role == "主管" or current_user.name == project.proj_manager %}
 <div class="modal fade" id="editProjectModal" tabindex="-1"
      aria-labelledby="editProjectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -187,6 +287,24 @@
                             <small class="current-value-hint">当前：{{ project.end_date }}</small>
                         </div>
                     </div>
+
+                    <fieldset class="member-picker">
+                        <legend>项目成员</legend>
+                        <p>勾选此项目所属模块的成员，取消勾选可移除成员。</p>
+                        <input type="hidden" name="members_submitted" value="1">
+                        <div class="member-picker-list">
+                            {% for user in available_users %}
+                                <label class="member-picker-option" for="member-{{ user.id }}">
+                                    <input id="member-{{ user.id }}" type="checkbox"
+                                           name="member_ids" value="{{ user.id }}"
+                                           {% if user in project.members %}checked{% endif %}>
+                                    <span>{{ user.name }} <small>{{ user.username }}</small></span>
+                                </label>
+                            {% else %}
+                                <span class="member-picker-empty">当前模块暂无可选用户。</span>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
                 </div>
 
                 <div class="modal-footer">
@@ -197,6 +315,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 {% if current_user.role == "主管" or current_user.name == project.proj_manager %}
 <div class="modal fade" id="deleteProjectModal" tabindex="-1"

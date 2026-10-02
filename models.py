@@ -54,7 +54,10 @@ class UploadFile(db.Model):
     standard_name = db.Column(db.String(64), unique=True, nullable=False)
     uploaded_by = db.Column(db.String(64), nullable=False)
     proj_id = db.Column(db.Integer(), db.ForeignKey("project.id"), nullable=False)
+    uploaded_time = db.Column(db.DateTime, nullable=False)
     is_deleted = db.Column(db.Boolean(), default=False, nullable=False)
+    mat_key = db.Column(db.String(64), nullable=False)
+    deleted_time = db.Column(db.DateTime, nullable=True)
 
 class RegisterCode(db.Model):
     id = db.Column(db.Integer(), primary_key=True)

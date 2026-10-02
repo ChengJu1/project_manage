@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from flask import Flask, render_template
 from database import db, login_manager
 # 导入所有拆分后的蓝图
@@ -9,7 +10,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'proj-manage-secret-2026'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), "uploads")
+app.config['UPLOAD_FOLDER'] = str(Path(__file__).resolve().parent / "uploads")
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -39,4 +40,4 @@ with app.app_context():
         print("检测当前用户数量为空，已创建1个登录账号！")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=5001, debug=True)

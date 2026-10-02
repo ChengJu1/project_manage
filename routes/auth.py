@@ -1,5 +1,3 @@
-from crypt import methods
-
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
 from sqlalchemy.testing.provision import run_reap_dbs

@@ -1,10 +1,9 @@
 # routes/project.py
-from crypt import methods
 from datetime import datetime, date
 from multiprocessing.spawn import set_executable
 from tkinter.font import names
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import login_required, current_user
 from sqlalchemy import distinct, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -14,7 +13,7 @@ from flask import send_file
 
 from database import db
 from models import Project, UploadFile, User
-# from config import MATERIAL_ALL, CATEGORY_ORDER
+from config import MATERIAL_ALL
 # from utils import get_file_size
 
 project_bp = Blueprint('project', __name__)
@@ -24,6 +23,10 @@ project_bp = Blueprint('project', __name__)
 @login_required
 def index():
     keyword = request.args.get("search", "").strip()
+    page = max(1, request.args.get("page", 1, type=int))
+    page_size = request.args.get("page_size", 10, type=int)
+    if page_size not in (10, 20, 50):
+        page_size = 10
 
     query = get_visible_project_query()
     if keyword:
@@ -36,9 +39,19 @@ def index():
             )
         )
 
-    seen_projects = query.all()
+    pagination = query.order_by(Project.id.desc()).paginate(
+        page=page,
+        per_page=page_size,
+        error_out=True,
+    )
 
-    return render_template("index.html", projects=seen_projects)
+    return render_template(
+        "index.html",
+        pagination=pagination,
+        total_count=pagination.total,
+        keyword=keyword,
+        page_size=page_size,
+    )
 
 # 新建项目
 @project_bp.route("/proj/add", methods=["POST"])
@@ -103,7 +116,31 @@ def proj_detail(pid):
     result = query.filter(
         Project.id == pid
     ).first_or_404()
-    return render_template("detail.html", project=result)
+
+    files = UploadFile.query.filter(
+        UploadFile.proj_id == pid,
+        UploadFile.is_deleted == False
+    ).all()
+
+    available_users = User.query.filter(
+        User.module == result.module
+    ).all()
+
+    deleted_files = UploadFile.query.filter(
+        UploadFile.is_deleted == True,
+        UploadFile.proj_id == pid
+    ).all()
+
+    return render_template(
+        "detail.html",
+        project=result,
+        files=files,
+        available_users=available_users,
+        materials=MATERIAL_ALL,
+        deleted_files=deleted_files
+    )
+
+
 
 @project_bp.route("/api/all_users", methods=["GET"])
 @login_required
@@ -119,11 +156,37 @@ def edit_proj(pid):
         Project.id == pid
     ).first_or_404()
 
+    #修改项目成员逻辑
+    if not(current_user.name == project.proj_manager or current_user.role == "主管"):
+        abort(403)
+
     new_pid = request.form.get("pid")
     new_name = request.form.get("name")
     new_proj_manager = request.form.get("proj_manager")
     new_start_date_str = request.form.get("start_date")
     new_end_date_str = request.form.get("end_date")
+    member_ids = request.form.getlist("member_ids")
+
+    try:
+        for i in range(len(member_ids)):
+            member_ids[i] = int(member_ids[i])
+    except ValueError:
+        abort(400)
+
+    selected_users = User.query.filter(
+        User.id.in_(member_ids),
+        User.module == project.module
+    ).all()
+
+    selected_ids = set()
+    for i in selected_users:
+        selected_ids.add(i.id)
+
+    if selected_ids != set(member_ids):
+        abort(400)
+
+    if "members_submitted" in request.form:
+        project.members = selected_users
 
     if not any([
         new_pid,
@@ -131,6 +194,7 @@ def edit_proj(pid):
         new_proj_manager,
         new_end_date_str,
         new_start_date_str,
+        request.form.get("members_submitted")
     ]):
         flash("更新信息为空，请输入后重试")
         return redirect(url_for("project.proj_detail", pid=pid))
@@ -169,6 +233,7 @@ def edit_proj(pid):
         flash("目前项目编号或者名称已存在，请更换")
         db.session.rollback()
         return redirect(url_for("project.proj_detail", pid=pid))
+
     return redirect(url_for("project.proj_detail", pid=pid))
 
 # 删除项目接口
