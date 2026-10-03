@@ -60,3 +60,6 @@ Thumbs.db
 # 环境变量配置
 .env
 config_local.py
+
+# 个人开发指导文档
+DAY1_GUIDE.md
