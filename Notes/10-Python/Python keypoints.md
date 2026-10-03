@@ -227,13 +227,73 @@ striptime的意思就是按照后面规定的方式解析前面的字符串,其�
 ```
 
 ### 12. PRG(Post/Redirect/Get)
-
 用户在前端提交表单时，采用这种方式防止用户重复提交，提交后弹窗，重定向到首页，然后重新发送Get请求渲染网页。
 
 ### 13. SQLAlchemy 查询
-
 `Project.query.filter(...)` 和 `Project.query.filter(...).all()` 返回的东西有什么区别？为什么通常要等筛选条件全部加完才调用 `.all()`？
 第一个是尚可继续组合条件的查询对象；第二个执行查询并返回由模型对象组成的 Python 列表。
+#### 14. 和Redis有关的三级缓存
+本地缓存 → Redis 缓存 → 数据库
+第一层：本地缓存
+本地缓存存在python进程的内存中
+- 速度最快，不需要网络请求
+- 只对当前python进程有效
+- 程序重启之后数据就会消失
+- 多个服务器之间不能自动共享
+第二层：Redis缓存
+Redis是独立运行的内存数据库，python通过网络访问
+- 比本地缓存稍慢，但仍然很快
+- 多个 Python 服务可以共享
+- 可以设置过期时间
+- 支持字符串、哈希、列表、集合等结构
+- 可以做缓存、分布式锁、排行榜和限流
+- 详情见 [[Redis]]
+第三层：数据库(MySQL, PostgreSQL, SQLite)
+- 访问速度通常比缓存慢
+- 数据持久保存
+- 数据库一般是最终可信的数据来源
+- 支持复杂查询、事务和数据约束
 
-三重存储
-悲观锁
+### 15 .Python 中的Path
+
+*path.resolve()*
+
+把路径转换成规范的绝对路径
+假设当前运行python的位置是:
+`/Users/xinyuan/project`
+
+```python
+from pathlib import Path
+
+path = Path("hello.txt")
+
+print(path)
+print(path.resolve())
+```
+输出:
+```text
+hello.txt
+/Users/xinyuan/project/hello.txt
+```
+
+*path.read_text()*
+
+对path这个Path的实例，读其中的所有内容，返回字符串
+
+```Python
+from pathlib import Path
+
+path = Path("hello.txt")
+
+content = path.read_text(encoding="utf-8")
+
+print(content)
+```
+
+*glob()*
+
+按照规则，在文件夹中查找文件或者文件夹（返回类型是一个生成器）
+
+```Python
+Path("文件夹").glob("匹配规则")
+```
